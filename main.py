@@ -1,31 +1,67 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import mysql.connector
+from mysql.connector import Error
 
 app = FastAPI()
 
-# Sample data to simulate a database
-items = {
-    1: {"name": "Item 1", "description": "This is the first item"},
-    2: {"name": "Item 2", "description": "This is the second item"}
+# MySQL Database connection configuration
+db_config = {
+    'host': 'localhost',
+    'user': 'root',  # Replace with your MySQL username
+    'password': 'pass',  # Replace with your MySQL password
+    'database': 'dummy'
 }
 
-# GET request - fetch an item by its ID
-@app.get("/items/{item_id}")
-async def get_item(item_id: int):
-    item = items.get(item_id)
-    if item:
-        return {"item_id": item_id, "data": item}
-    return {"error": "Item not found"}
 
-# Data model for POST request using Pydantic
+# Pydantic model to handle POST data
 class Item(BaseModel):
     name: str
     description: str
 
-# POST request - create a new item
+
+# Function to get a database connection
+def get_db_connection():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        return connection
+    except Error as e:
+        print(f"Error: {e}")
+        raise HTTPException(status_code=500, detail="Database connection failed")
+
+
+# GET request to fetch all items
+@app.get("/items/")
+async def get_items():
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT * FROM items"
+    cursor.execute(query)
+    items = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return items
+
+
+# POST request to create a new item
 @app.post("/items/")
 async def create_item(item: Item):
-    new_id = len(items) + 1
-    items[new_id] = {"name": item.name, "description": item.description}
-    return {"item_id": new_id, "data": items[new_id]}
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    query = "INSERT INTO items (name, description) VALUES (%s, %s)"
+    values = (item.name, item.description)
 
+    try:
+        cursor.execute(query, values)
+        connection.commit()
+        item_id = cursor.lastrowid
+    except Error as e:
+        connection.rollback()
+        cursor.close()
+        connection.close()
+        raise HTTPException(status_code=500, detail="Failed to insert item")
+
+    cursor.close()
+    connection.close()
+
+    return {"id": item_id, "name": item.name, "description": item.description}
