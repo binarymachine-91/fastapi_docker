@@ -10,7 +10,8 @@ db_config = {
     'host': 'localhost',
     'user': 'root',  # Replace with your MySQL username
     'password': 'pass',  # Replace with your MySQL password
-    'database': 'dummy'
+    'database': 'dummy',
+    'port': 3306
 }
 
 
