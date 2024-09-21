@@ -32,6 +32,10 @@ def get_db_connection():
 
 
 # GET request to fetch all items
+@app.get("/")
+async def home_page():
+    return "Welcome to Docker world"
+
 @app.get("/items/")
 async def get_items():
     connection = get_db_connection()
