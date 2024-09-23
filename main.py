@@ -7,7 +7,7 @@ app = FastAPI()
 
 # MySQL Database connection configuration
 db_config = {
-    'host': '172.17.0.3',
+    'host': '172.17.0.2',
     'user': 'root',  # Replace with your MySQL username
     'password': 'pass',  # Replace with your MySQL password
     'database': 'dummy',
